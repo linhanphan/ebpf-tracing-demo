@@ -1,0 +1,32 @@
+version: '3.8'
+services:
+  myservice:
+    build: .
+    ports:
+      - "8080:8080"
+    networks:
+      - mynetwork
+
+  sender-1:
+    image: alpine
+    volumes:
+      - ./send_requests.sh:/send_requests.sh
+    command: /bin/sh -c "apk add --no-cache curl && /send_requests.sh"
+    depends_on:
+      - myservice
+    networks:
+      - mynetwork
+  
+  sender-2:
+    image: alpine
+    volumes:
+      - ./send_requests.sh:/send_requests.sh
+    command: /bin/sh -c "apk add --no-cache curl && /send_requests.sh"
+    depends_on:
+      - myservice
+    networks:
+      - mynetwork
+
+networks:
+  mynetwork:
+    driver: bridge
