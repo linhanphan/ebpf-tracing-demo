@@ -26,7 +26,7 @@ def generate_random():
 
 # get color
 @app.route('/color', methods=['GET'])
-def generate_random():
+def generate_color():
     # Generate a random number between 1 and 100
     random_number = random.randint(1, 100)
 
