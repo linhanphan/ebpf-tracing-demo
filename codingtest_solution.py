@@ -11,7 +11,7 @@ def find_max_lenght(numbers) -> int:
     """
     Finds the maximum length of a subarray with elements that have difference of at most 1.
     Args:
-        List (list): A list of integers.
+        numbers (list): A list of integers.
     Returns:
         int: The maximum length of a subarray with elements that have difference of at most 1.
     """
@@ -26,7 +26,7 @@ def find_max_lenght(numbers) -> int:
     max_length = 0
     # iterate through the dictionary
     for k in count:
-        # find the maximum length with previous and next element if they exist
+        # find the maximum length with the previous and next element if they exist
         max_length = max(
             max_length,
             count[k] + count.get(k + 1, 0),
