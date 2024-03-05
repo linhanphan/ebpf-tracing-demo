@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.9'
 services:
   myservice:
     build: .
@@ -11,7 +11,7 @@ services:
     image: alpine
     volumes:
       - ./send_requests.sh:/send_requests.sh
-    command: /bin/sh -c "apk add --no-cache curl && /send_requests.sh"
+    command: /bin/sh -c "apk add --no-cache curl && /bin/sh /send_requests.sh"
     depends_on:
       - myservice
     networks:
@@ -21,7 +21,7 @@ services:
     image: alpine
     volumes:
       - ./send_requests.sh:/send_requests.sh
-    command: /bin/sh -c "apk add --no-cache curl && /send_requests.sh"
+    command: /bin/sh -c "apk add --no-cache curl && /bin/sh /send_requests.sh"
     depends_on:
       - myservice
     networks:
