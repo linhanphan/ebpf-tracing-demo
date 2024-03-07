@@ -1,3 +1,15 @@
+# Introduction
+
+This repository hosts an eBPF program designed to monitor HTTP traffic on a server, tracking metrics such as request counts, response totals, success rates, and the latency (average, minimum, maximum) associated with requests per IP address.
+
+The core strategy involves integrating a function within the eBPF socket filter to intercept both incoming and outgoing HTTP traffic, subsequently storing this data in a BPF map for further analysis by a userspace application.
+
+To emulate server response times, we've developed a Python web application server. This server randomly generates an integer, pauses for "x" milliseconds (where 0 < x < 10), and then sends this number back to the client. Should this number be divisible by 5, the server issues an HTTP 500 error to mimic a request failure.
+
+An alternative method for HTTP traffic capture involves embedding an eBPF program within system call functions, such as accept4, read, write, and close, regarding socket operations. The code for this approach will be submitted soon.
+
+Below is the guideline to run the program.
+
 # Installing BCC
 
 Currently, BCC packages for both the Ubuntu Universe, and the iovisor builds are outdated. This is a known and tracked in:
