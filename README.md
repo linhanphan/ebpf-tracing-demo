@@ -47,3 +47,13 @@ python3 ./http_filter.py -i br-2b4e89c112d8
 Open another terminal to run the docker compose again to send HTTP request and you can see the result from eBPF program
 
 ![](/img/http_metric.png)
+
+# Reference
+
+The program is developed based on below eBPF examples and Internet resources:
+
+https://github.com/iovisor/bcc
+
+https://github.com/iovisor/bcc/tree/master/examples/networking/http_filter
+
+https://gist.github.com/sunhay/02f235f2942403fada25063242a3aeb1
