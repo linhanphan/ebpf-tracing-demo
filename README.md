@@ -48,6 +48,9 @@ Run the app server
 sudo apt-get -y install python3-pip
 pip install flask
 python3 app.py
+# if you want to run multiple services, use below command in two terminals
+flask run --host=0.0.0.0 --port=8080
+flask run --host=0.0.0.0 --port=8888
 ```
 
 Run the eBPF program (with sudo)
