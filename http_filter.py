@@ -49,6 +49,7 @@ average_response_time = sum(success_delay) / len(success_delay)
 average_fail_time = sum(fail_delay) / len(fail_delay)
 """
 p_data = {}
+all_data = {}
 
 
 def get_ip_address(ifname):
@@ -68,6 +69,139 @@ def get_ip_address(ifname):
 
 def get_first_line(s):
     return s.split(b"\r\n")[0].decode()
+
+
+# print base on port
+def printStats_v2():
+    for k, v in sorted(http_events.items(), key=lambda ts: ts[0].value):
+
+        # copy the data from bpf map to a raw_data dictionary
+        raw_data[k.value] = v
+
+        src_ip = inet_ntop(AF_INET, pack(">I", v.src_ip))
+        dst_ip = inet_ntop(AF_INET, pack(">I", v.dst_ip))
+        src_port = str(v.src_port)
+        dst_port = str(v.dst_port)
+        # ts = k.value
+        # check if this is egress packet
+        if src_ip == host_ip:
+            p_data = all_data.get(src_ip + ":" + src_port, {})
+            # first egress packet
+            if dst_ip not in p_data:
+                p_data[dst_ip] = {
+                    "ingress": {},
+                    "egress": {dst_ip + ":" + dst_port: [k.value]},
+                    "complete": [],
+                    "success": [],
+                    "success_delay": [],
+                    "fail": [],
+                    "fail_delay": [],
+                }
+            else:
+                # if we already had data of ingress packet
+                if dst_ip + ":" + dst_port not in p_data[dst_ip]["egress"]:
+                    p_data[dst_ip]["egress"][dst_ip + ":" + dst_port] = [k.value]
+                else:
+                    p_data[dst_ip]["egress"][dst_ip + ":" + dst_port].append(k.value)
+
+                if dst_ip + ":" + dst_port in p_data[dst_ip]["ingress"]:
+                    pair_req = (
+                        p_data[dst_ip]["ingress"][dst_ip + ":" + dst_port],
+                        k.value,
+                    )
+                    p_data[dst_ip]["complete"].append(pair_req)
+                    delay_ms = (
+                        k.value - p_data[dst_ip]["ingress"][dst_ip + ":" + dst_port][-1]
+                    ) / 1000000
+
+                    status = get_first_line(v.payload).split(" ")[1]
+                    if status == "200":
+                        p_data[dst_ip]["success"].append(pair_req)
+                        p_data[dst_ip]["success_delay"].append(delay_ms)
+                    else:
+                        # assum that only traffic with status 200 is success
+                        p_data[dst_ip]["fail"].append(pair_req)
+                        p_data[dst_ip]["fail_delay"].append(delay_ms)
+            all_data[src_ip + ":" + src_port] = p_data
+        else:
+            p_data = all_data.get(dst_ip + ":" + dst_port, {})
+            # if this is the first ingress packet
+            if src_ip not in p_data:
+                p_data[src_ip] = {
+                    "ingress": {src_ip + ":" + src_port: [k.value]},
+                    "egress": {},
+                    "complete": [],
+                    "success": [],
+                    "success_delay": [],
+                    "fail": [],
+                    "fail_delay": [],
+                }
+            else:
+                if src_ip + ":" + src_port not in p_data[src_ip]["ingress"]:
+                    p_data[src_ip]["ingress"][src_ip + ":" + src_port] = [k.value]
+                else:
+                    p_data[src_ip]["ingress"][src_ip + ":" + src_port].append(k.value)
+                # since we iterate in order, we can assume that the first packet is the request
+                # and the second packet is the response so skip checking for the request
+            all_data[dst_ip + ":" + dst_port] = p_data
+        # print(p_data)
+    # clear the bpf map
+    try:
+        http_events.clear()
+    except:
+        print("cleanup exception.")
+
+    os.system("clear")
+    # print the processed data
+    # print("Processed Data")
+    # print(p_data)
+    print("---------- %s ----------" % (str(datetime.now())))
+    print("---------- Total logs: %d ----------" % len(raw_data))
+
+    for svc, p_data in all_data.items():
+        print("Service : %s" % svc)
+        print(
+            "%-15s %-15s %-15s %-20s %-25s %-25s"
+            % (
+                "IP",
+                "Total Requests",
+                "Response Rate",
+                "Total success (Rate)",
+                "Avg/Max/Min Success Time",
+                "Avg/Max/Min Fail Time",
+            )
+        )
+
+        for ip, data in p_data.items():
+            # calculate the metrics
+            response_rate = len(data["egress"]) * 100 / len(data["ingress"])
+            success_rate = len(data["success"]) * 100 / len(data["ingress"])
+            if len(data["success_delay"]) == 0:
+                average_success_time = 0
+            else:
+                average_success_time = sum(data["success_delay"]) / len(
+                    data["success_delay"]
+                )
+            if len(data["fail_delay"]) == 0:
+                average_fail_time = 0
+            else:
+                average_fail_time = sum(data["fail_delay"]) / len(data["fail_delay"])
+            print(
+                "%-15s %-15d %-15.2f %d (%.2f) \t\t %.2f/%d/%-15d \t %.2f/%d/%-15d"
+                % (
+                    ip,
+                    len(data["ingress"]),
+                    response_rate,
+                    len(data["success"]),
+                    success_rate,
+                    average_success_time,
+                    max(data["success_delay"], default=0),
+                    min(data["success_delay"], default=0),
+                    average_fail_time,
+                    max(data["fail_delay"], default=0),
+                    min(data["fail_delay"], default=0),
+                )
+            )
 
 
 # print function
@@ -257,5 +391,5 @@ BPF.attach_raw_socket(function_monitor_filter, interface)
 http_events = bpf.get_table("http_events")
 
 while 1:
-    printStats()
+    printStats_v2()
     time.sleep(1)

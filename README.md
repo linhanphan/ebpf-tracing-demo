@@ -60,6 +60,9 @@ Open another terminal to run the docker compose again to send HTTP request and y
 
 ![](/img/http_metric.png)
 
+**Version 2 (monitor by port for multiple services)**
+![](/img/metric_v2.png)
+
 # Reference
 
 The program is developed based on below eBPF examples and Internet resources:
